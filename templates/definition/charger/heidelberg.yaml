@@ -7,6 +7,8 @@ params:
   choice: ["rs485"]
   baudrate: 19200
   comset: "8E1"
+- name: delay
 render: |
   type: heidelberg
   {{include "modbus" .}}
+  delay: {{ .delay }}
