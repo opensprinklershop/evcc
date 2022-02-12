@@ -19,7 +19,7 @@ import (
 // History: 1.0 : 29.12.2021 Initial release
 //          1.1 : 15.01.2022 First public release
 //          1.2 : 16.01.2022 Added support for patched firmware, use when using slave box(es) with one master
-//                Patched firmware: https://ddownload.com/cdqhz1prmp9o/chargebox_185-patched-mode2.tgz
+//                Patched firmware: https://ddownload.com/cdqhz1prmp9o/chargebox_185-patched-mode2.tgz (dann umbenennen in chargebox_185.tgz)
 //
 type PCElectric struct {
 	*request.Helper
@@ -32,6 +32,7 @@ type PCElectric struct {
 	lbmode       bool  // true/false (wird automatisch bestimmt)
 	serialNumber int64 // 1234567
 	mode2        bool  // Patched Firmware
+	lastStatus   api.ChargeStatus
 }
 
 func init() {
@@ -75,11 +76,15 @@ func NewPCElectric(uri string, slaveIndex int, meter string) (*PCElectric, error
 	uri = strings.TrimSuffix(strings.TrimRight(uri, "/"), "/servlet") + "/servlet/rest/chargebox"
 
 	wb := &PCElectric{
-		Helper:     request.NewHelper(log),
-		log:        log,
-		uri:        uri,
-		slaveIndex: slaveIndex,
-		meter:      strings.ToUpper(meter),
+		Helper:       request.NewHelper(log),
+		log:          log,
+		uri:          uri,
+		slaveIndex:   slaveIndex,
+		meter:        strings.ToUpper(meter),
+		lbmode:       false,
+		serialNumber: 0,
+		mode2:        false,
+		lastStatus:   api.StatusA,
 	}
 
 	// Nur Master: lb Config auslesen.
@@ -180,6 +185,7 @@ func (wb *PCElectric) Status() (api.ChargeStatus, error) {
 	default: // generalfault
 		res = api.StatusF
 	}
+	wb.lastStatus = res
 
 	return res, nil
 }
@@ -309,12 +315,18 @@ func (wb *PCElectric) MaxCurrent(current int64) error {
 
 // CurrentPower implements the api.Meter interface W
 func (wb *PCElectric) currentPower() (float64, error) {
+	if wb.lastStatus != api.StatusC { // Wenn nicht am laden, dann ist der Wert 0!
+		return 0, nil
+	}
 	l1, l2, l3, err := wb.currents()
 	return 230 * (l1 + l2 + l3), err
 }
 
 // TotalEnergy implements the api.MeterEnergy interface kwh
 func (wb *PCElectric) totalEnergy() (float64, error) {
+	if wb.lastStatus != api.StatusC { // Wenn nicht am laden, dann ist der Wert 0!
+		return 0, nil
+	}
 	var res pcelectric.MeterInfo
 	uri := fmt.Sprintf("%s/meterinfo/%s", wb.uri, wb.meter)
 	err := wb.GetJSON(uri, &res)
@@ -323,6 +335,9 @@ func (wb *PCElectric) totalEnergy() (float64, error) {
 
 // Currents implements the api.MeterCurrents interface A
 func (wb *PCElectric) currents() (float64, float64, float64, error) {
+	if wb.lastStatus != api.StatusC { // Wenn nicht am laden, dann ist der Wert 0!
+		return 0, 0, 0, nil
+	}
 	var res pcelectric.MeterInfo
 	uri := fmt.Sprintf("%s/meterinfo/%s", wb.uri, wb.meter)
 	err := wb.GetJSON(uri, &res)
