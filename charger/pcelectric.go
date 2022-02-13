@@ -20,6 +20,8 @@ import (
 //          1.1 : 15.01.2022 First public release
 //          1.2 : 16.01.2022 Added support for patched firmware, use when using slave box(es) with one master
 //                Patched firmware: https://ddownload.com/cdqhz1prmp9o/chargebox_185-patched-mode2.tgz (dann umbenennen in chargebox_185.tgz)
+//                Patched firmware: https://ddownload.com/sylu9pb10pi7/chargebox_187-patched-mode2.tgz (dann umbenennen in chargebox_187.tgz)
+
 //
 type PCElectric struct {
 	*request.Helper
@@ -324,9 +326,6 @@ func (wb *PCElectric) currentPower() (float64, error) {
 
 // TotalEnergy implements the api.MeterEnergy interface kwh
 func (wb *PCElectric) totalEnergy() (float64, error) {
-	if wb.lastStatus != api.StatusC { // Wenn nicht am laden, dann ist der Wert 0!
-		return 0, nil
-	}
 	var res pcelectric.MeterInfo
 	uri := fmt.Sprintf("%s/meterinfo/%s", wb.uri, wb.meter)
 	err := wb.GetJSON(uri, &res)
