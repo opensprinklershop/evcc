@@ -20,7 +20,7 @@ import (
 //          1.1 : 15.01.2022 First public release
 //          1.2 : 16.01.2022 Added support for patched firmware, use when using slave box(es) with one master
 //                Patched firmware: https://ddownload.com/cdqhz1prmp9o/chargebox_185-patched-mode2.tgz (dann umbenennen in chargebox_185.tgz)
-//                Patched firmware: https://ddownload.com/sylu9pb10pi7/chargebox_187-patched-mode2.tgz (dann umbenennen in chargebox_187.tgz)
+//                Patched firmware: https://ddownload.com/ta5obrimvwp5/chargebox_187-patched-mode2.tgz (dann umbenennen in chargebox_187.tgz)
 
 //
 type PCElectric struct {
@@ -317,9 +317,6 @@ func (wb *PCElectric) MaxCurrent(current int64) error {
 
 // CurrentPower implements the api.Meter interface W
 func (wb *PCElectric) currentPower() (float64, error) {
-	if wb.lastStatus != api.StatusC { // Wenn nicht am laden, dann ist der Wert 0!
-		return 0, nil
-	}
 	l1, l2, l3, err := wb.currents()
 	return 230 * (l1 + l2 + l3), err
 }
