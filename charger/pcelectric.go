@@ -106,7 +106,7 @@ func NewPCElectric(uri string, slaveIndex int, meter string) (*PCElectric, error
 		if err := wb.GetJSON(uri, &status); err == nil {
 			wb.mode2 = true
 			log.DEBUG.Printf("Patched Firmware detected!")
-			err = wb.Enable(true)
+			err = wb.Enable(false)
 			if err != nil {
 				return wb, err
 			}
